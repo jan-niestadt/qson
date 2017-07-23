@@ -6,7 +6,7 @@ There exist several ways of encoding more complex [JSON](http://json.org/)-like 
 
 QSON is an attempt to create a simple but powerful serialization for JSON-like datastructures that results in shorter, more readable URLs. It provides full support for any data structure that can be represented in JSON. Javascript and Java versions are included, with unit tests for both.
 
-You can test QSON out yourself using the provided [test page](https://github.com/jan-niestadt/qson/blob/master/js/test.html).
+You can test QSON out yourself using the provided [test page](https://htmlpreview.github.io/?https://github.com/jan-niestadt/qson/blob/master/js/test.html) (just input JSON data in the left textarea).
 
 ## Usage
 
