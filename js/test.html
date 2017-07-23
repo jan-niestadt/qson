@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8"> 
+		<style>
+table { width: 100%; }
+label, textarea { display: block; }
+textarea { width: 100%; height: 330px; }
+		</style>
+		<script src="qson.js"></script>
+		<script src="test.js"></script>
+	</head>
+	<body onload="init();">
+		<h1>QSON: Query String Object Notation</h1>
+		
+		<p>There exist several ways of encoding more complex JSON-like datastructures into URLs (e.g. <a href='http://api.jquery.com/jquery.param/'>jQuery.param</a>, <a href='https://github.com/guidj/jsonuri-js'>jsonuri-js</a>). Unfortunately, there's no universally accepted standard and existing approaches seem to have drawbacks in terms of compactness and readability (because of how arrays and objects are represented and URL encoding). QSON is an attempt to create a simple but powerful serialization for JSON-like datastructures that results in shorter, more readable URLs. It provides full support for any data structure that can be represented in JSON.</p>
+
+		<table>
+			<tr>
+				<th><label for='input'>JSON Input:</label></th>
+				<th><label for='encoded'>QSON- &amp; URL-encoded:</label></th>
+				<th><label for='decoded'>Decoded, checked:</label></th>
+			</tr>
+			<tr>
+				<th id='inputMsg'>&nbsp;</th>
+				<th id='encodedMsg'>&nbsp;</th>
+				<th id='decodedMsg'>&nbsp;</th>
+			</tr>
+			<tr>
+				<th><textarea onkeyup='test();' onchange='test();' id='input'></textarea></th>
+				<th><textarea id='encoded' readonly='true'></textarea></th>
+				<th><textarea id='decoded' readonly='true'></textarea></th>
+			</tr>
+		</table>
+
+		<input type='button' onclick='test();' value='Test' />
+
+	</body>
+</html>

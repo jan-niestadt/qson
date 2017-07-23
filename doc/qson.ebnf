@@ -1,0 +1,28 @@
+/* Qson grammar
+
+(Generate diagrams at http://bottlecaps.de/rr/ui#nonterminal)
+
+*/
+
+Value ::=
+  '_'? String |
+  Number |
+  Object |
+  Array |
+  "true" |
+  "false" |
+  "null" |
+
+Array ::=
+  '(' ')' |
+  '(' Value ("'" Value)* ')'
+
+Object ::= 
+  '(' ')' |
+  '(' String '~' Value ("'" String '~' Value)* ')'
+
+String ::=
+  ( [^~'!)] | '!' [~'!)] )
+
+Number ::=
+  '-'? ('0' | nonzero_digit digit*) ( '.' digit+ )? ( ('e' | 'E') ('+' | '-')? digit+ )?
