@@ -23,17 +23,32 @@ These examples all use the `toQueryString()` function. See the [unit tests](http
 A simple value like this
 ```json
 {
-    "a": 3,
-    "b": "test",
-    "c": true
+    "id": 3,
+    "search": "test",
+    "highlight": true
 }
 ```
 will be converted by `toQueryString()` to
 
-    a=3&b=test&c=true
+    id=3&search=test&highlight=true
 
-### More complex object
-A value with more nesting like
+### Object containing arrays and objects
+The previous example is no different from normal URLs. QSON becomes useful if you have nested datastructures like
+```json
+{
+    "favcol": ["blue", "green"],
+    "pets": {
+        "cats": 3,
+        "dogs": 2
+    }
+}
+```
+This will be converted into the query string
+
+    favcol=(blue'green)&pets=(cats~3'dogs~2)
+
+### Complex object
+A more complex object like
 ```json
 {
     "a": [1, 2, 3],
@@ -46,7 +61,6 @@ A value with more nesting like
     "e": ":-)"
 }
 ```
-
 becomes the query string
 
     a=(1'2'3)&b=(d~(~~)'f~(g'h))&c=_true&d=4e-20&e=%3A-!)
@@ -87,7 +101,7 @@ If an object has a key that's not a simple identifier, this will automatically t
 will be encoded as the query string
 
     _=(a%20b~3)
-    
+
 The same is true for an object containing a key that matches the default query parameter name (`_` unless you specify otherwise).
 
 ## Specification
