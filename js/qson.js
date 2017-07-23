@@ -331,7 +331,11 @@ var QSON = {};
             if (i == entries.length - 1 && entries[i].length == 0)
                 break; // query string ended with &; this is okay
             var keyValue = entries[i].split(/=/);
+            if (keyValue.length !== 2)
+                throw "Malformed parameter in query string: " + input;
             var key = decodeURIComponent(keyValue[0]);
+            if (key.length === 0)
+                throw "Malformed parameter in query string: " + input;
             var value = decodeURIComponent(keyValue[1]);
             paramObj[key] = value;
         }

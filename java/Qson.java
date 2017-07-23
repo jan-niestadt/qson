@@ -479,8 +479,10 @@ public class Qson {
         for (String entry: entries) {
             String[] keyValue = entry.split("=", -1);
             if (keyValue.length != 2)
-            	throw new UnsupportedOperationException("Malformed entry in query string: " + input);
+            	throw new UnsupportedOperationException("Malformed parameter in query string: " + input);
             String key = EncodingUtil.decodeURIComponent(keyValue[0]);
+            if (key.length() == 0)
+            	throw new UnsupportedOperationException("Malformed parameter in query string: " + input);
             String value = EncodingUtil.decodeURIComponent(keyValue[1]);
             paramObj.put(key, value);
         }

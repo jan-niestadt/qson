@@ -218,7 +218,9 @@ function unitTests() {
 		
 		testDecodeQueryString("special parameter name", "a=b&_=c", map("a", "b", "_", "c"), false);
 		testDecodeQueryString("query string ending in &", "a=b&", map("a", "b"), false);
-		
+		testDecodeQueryString("invalid query string 1", "a", null, true);
+		testDecodeQueryString("invalid query string 2", "=1", null, true);
+
 		testDecodeQsonValue("illegal value", "Test!", null, true);
 		testDecodeQsonValue("malformed object 1", "(a~b')", null, true);
 		testDecodeQsonValue("malformed object 2", "('a~b)", null, true);
