@@ -69,7 +69,7 @@ Notes:
 - Array elements and objects entries are `'`-separated; object keys and values are separated using `~`.
 - An empty object has a special notation: `(~~)`.
 - The string `"true"` is encoded as `_true`, while the boolean value `true` simply remains `true`. The same applies to `false` and `null`. It also applies to numbers, so a string that looks like a number will be decoded into a number unless it is prefixed with `_` to force it to be decoded to a string.
-- The escape character, similar to `\` in many languages, is `!`. This is used to escape characters that have special meaning in QSON.
+- The escape character is `!`. This is used to escape characters that have special meaning in QSON. Any character following `!` is considered part of the value, so for example `(a!~2)` describes an array with one string element: `["a~2"]`.
 - The delimiters `(`, `'`, `~` and `)` the the escape character `!` were all chosen because they don't need to be %-encoded in query strings. This makes QSON query strings more readable.
 
     
