@@ -5,7 +5,7 @@ function init() {
 
 	// If we have a query string, try to decode it as an QSON query string and put the JSON in the input box.
 	var search = location.search;
-	var usingGitHubPreview = search.substr(0, 18) === "https://github.com";
+	var usingGitHubPreview = search.substr(0, 19) === "?https://github.com";
 	if (search && search.length > 1 && !usingGitHubPreview) {
 		search = search.substr(1);
 		var result = undefined;
