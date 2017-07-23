@@ -23,9 +23,9 @@ These examples all use the `toQueryString()` function. See the [unit tests](http
 A simple value like this
 ```json
 {
-	"a": 3,
-	"b": "test",
-	"c": true
+    "a": 3,
+    "b": "test",
+    "c": true
 }
 ```
 will be converted by `toQueryString()` to
@@ -36,12 +36,12 @@ will be converted by `toQueryString()` to
 A value with more nesting like
 ```json
 {
-	"a": [1, 2, 3],
-	"b": {
-		"d": {},
-		"f": ["g", "h"]
-	},
-	"c": "true",
+    "a": [1, 2, 3],
+    "b": {
+        "d": {},
+        "f": ["g", "h"]
+    },
+    "c": "true",
     "d": 4e-20,
     "e": ":-)"
 }
@@ -64,7 +64,7 @@ If you pass a value that is not an object but, for example, an array like
 [
     "a",
     {
-    	"b": "c",
+        "b": "c",
         "d": "e"
     },
     -3.3
