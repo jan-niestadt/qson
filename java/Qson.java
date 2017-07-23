@@ -275,7 +275,7 @@ public class Qson {
 
     // Check if the input appears to be a number.
     static boolean isNumberString(String input) {
-        return input != null && input.matches("[\\-](0|[1-9]\\d*)(\\.\\d+)?([eE][+-]?\\d+)?");
+        return input != null && input.matches("[\\-]?(0|[1-9]\\d*)(\\.\\d+)?([eE][+-]?\\d+)?");
     }
 
     // Escape characters with special meaning in QSON with a !

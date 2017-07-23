@@ -40,7 +40,7 @@ var QSON = {};
 
     // Check if the input appears to be a number.
     function isNumberString(input) {
-        return input && input.match(/^[\-](0|[1-9]\d*)(\.\d+)?([eE][+-]?\d+)?$/);
+        return input && input.match(/^[\-]?(0|[1-9]\d*)(\.\d+)?([eE][+-]?\d+)?$/);
     }
 
     /**
