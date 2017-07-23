@@ -52,10 +52,11 @@ becomes the query string
     a=(1'2'3)&b=(d~(~~)'f~(g'h))&c=_true&d=4e-20&e=%3A-!)
 
 Notes:
-- an empty object has a special notation: `(~~)`
-- the string `"true"` is encoded as `_true`, while the boolean value `true` simply remains `true`. The same applies to `false` and `null`. It also applies to numbers, so a string that looks like a number will be decoded into a number unless it is prefixed with `_` to force it to be decoded to a string.
-- `!` is the escape character, similar to `\` in many languages. This is used to escape characters that have special meaning in QSON.
-- the delimiters `(`, `'`, `~` and `)` the the escape character `!` were all chosen because they don't need to be %-encoded in query strings. This makes QSON query strings more readable.
+- Array elements and objects entries are `'`-separated; object keys and values are separated using `~`.
+- An empty object has a special notation: `(~~)`.
+- The string `"true"` is encoded as `_true`, while the boolean value `true` simply remains `true`. The same applies to `false` and `null`. It also applies to numbers, so a string that looks like a number will be decoded into a number unless it is prefixed with `_` to force it to be decoded to a string.
+- The escape character, similar to `\` in many languages, is `!`. This is used to escape characters that have special meaning in QSON.
+- The delimiters `(`, `'`, `~` and `)` the the escape character `!` were all chosen because they don't need to be %-encoded in query strings. This makes QSON query strings more readable.
 
     
 ### Non-object value
@@ -75,6 +76,19 @@ If you pass a value that is not an object but, for example, an array like
     _=(a'(b~c'd~e)'-3.3)
 
 Of course, `fromQueryString()` recognizes the special parameter name and correctly returns the original array.
+
+### Objects with unusual keys
+If an object has a key that's not a simple identifier, this will automatically trigger the same behaviour as for non-objects. So this object
+```json
+{
+    "a b": 3
+}
+```
+will be encoded as the query string
+
+    _=(a%20b~3)
+    
+The same is true for an object containing a key that matches the default query parameter name (`_` unless you specify otherwise).
 
 ## Specification
 For the EBNF grammar and diagrams, see [the doc/ directory](https://github.com/jan-niestadt/qson/tree/master/doc).
