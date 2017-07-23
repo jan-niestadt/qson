@@ -12,12 +12,12 @@ You can test QSON out yourself using the provided [test page](https://github.com
 
 To generate a query string that can be concatenated to a URL (after the "?"), simply call `toQueryString(value)`. To convert a query string back to the original datastructure, call `fromQueryString(string)`.
 
-To generate a parameter object (e.g. for use with `jQuery.ajax()`), call `toParamObject(value)`. To convert a parameter object back to the original datastructure, call `fromparamObject(object)`.
+To generate a parameter object (e.g. for use with `jQuery.ajax()`), call `toParamObject(value)`. To convert a parameter object back to the original datastructure, call `fromParamObject(object)`.
 
 To skip the query string functionality and simply encode the entire value in the QSON syntax, simply call `stringify(value)`. To convert a plain QSON string back to the original value, call `parse(string)`.
 
 ## Examples
-These examples all use the `toQueryString()` function. See the unit tests for more examples.
+These examples all use the `toQueryString()` function. See the [unit tests](https://github.com/jan-niestadt/qson/blob/master/js/test.js#L180) for more examples.
 
 ### Simple object
 A simple value like this
@@ -42,16 +42,21 @@ A value with more nesting like
 		"f": ["g", "h"]
 	},
 	"c": "true",
-    "d": 4e-20
+    "d": 4e-20,
+    "e": ":-)"
 }
 ```
 
 becomes the query string
 
-    a=(1'2'3)&b=(d~(~~)'f~(g'h))&c=_true&d=4e-20
-Also note:
-- an empty object is encoded as `(~~)`
-- the string "true" is encoded as `_true`, while the boolean value true is simply encoded as `true`. The same applies to `false`, `null` and numbers.
+    a=(1'2'3)&b=(d~(~~)'f~(g'h))&c=_true&d=4e-20&e=%3A-!)
+
+Notes:
+- an empty object has a special notation: `(~~)`
+- the string `"true"` is encoded as `_true`, while the boolean value `true` simply remains `true`. The same applies to `false` and `null`. It also applies to numbers, so a string that looks like a number will be decoded into a number unless it is prefixed with `_` to force it to be decoded to a string.
+- `!` is the escape character, similar to `\` in many languages. This is used to escape characters that have special meaning in QSON.
+- the delimiters `(`, `'`, `~` and `)` the the escape character `!` were all chosen because they don't need to be %-encoded in query strings. This makes QSON query strings more readable.
+
     
 ### Non-object value
 If you pass a value that is not an object but, for example, an array like
