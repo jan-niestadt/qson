@@ -194,6 +194,7 @@ function unitTests() {
 		testEncode("null string", "null", "_null", "_=_null");
 		testEncode("1 string", "1", "_1", "_=_1");
 		testEncode("1.0 string", "1", "_1", "_=_1");
+		testEncode("newline", "a\nb", "a\nb", "_=a%0Ab");
 		testEncode("URL-encoding 1", "a & b", "a & b", "_=a%20%26%20b");
 		testEncode("URL-encoding 2", map("a&b", 3.0), "(a&b~3)", "_=(a%26b~3)");
 		testEncode("URL-encoding 3", "a + b", "a + b", "_=a%20%2B%20b");
@@ -209,7 +210,11 @@ function unitTests() {
 		testEncode("empty key", map("", 3.0), "(~3)", "_=(~3)");
 		testEncode("empty key and value", map("", ""), "(~)", "_=(~)");
 		testEncode("empty object", map(), "(~~)", "");
+		testEncode("whitespace 1", map(" a ", " b "), "( a ~ b )", "_=(%20a%20~%20b%20)");
+		testEncode("whitespace 2", map("a", " b "), "(a~ b )", "a=%20b%20");
 		testEncode("special char keys", map("(", 1.0, "!", 2.0, "_", 3.0), "(!(~1'!!~2'!_~3)", "_=(!(~1'!!~2'!_~3)");
+		testEncode("key starts with _", map("_a", "b"), "(!_a~b)", "_a=b");
+		testEncode("key contains _", map("a_b", "c"), "(a_b~c)", "a_b=c");
 		testEncode("keys that look like values 1", map("null", 3.0), "(null~3)", "null=3");
 		testEncode("keys that look like values 2", map("1.2", 3.4), "(1.2~3.4)", "_=(1.2~3.4)");
 		testEncode("nested structures in object", map("a", list(1.0,2.0), "b", map("c", map("d", "e")), "f", list(list(list(3.0)))), "(a~(1'2)'b~(c~(d~e))'f~(((3))))", "a=(1'2)&b=(c~(d~e))&f=(((3)))");
@@ -219,8 +224,11 @@ function unitTests() {
 		
 		testDecodeQueryString("special parameter name", "a=b&_=c", map("a", "b", "_", "c"), false);
 		testDecodeQueryString("query string ending in &", "a=b&", map("a", "b"), false);
-		testDecodeQueryString("invalid query string 1", "a", null, true);
-		testDecodeQueryString("invalid query string 2", "=1", null, true);
+		testDecodeQueryString("invalid query string starting with &", "&a=b", null, true);
+		testDecodeQueryString("invalid query string &&", "a=b&&c=d", null, true);
+		testDecodeQueryString("query string starting with ?", "?a=b", map("?a", "b"), false);
+		testDecodeQueryString("invalid query string no =", "a", null, true);
+		testDecodeQueryString("invalid query string empty key", "=1", null, true);
 
 		testDecodeQsonValue("illegal value", "Test!", null, true);
 		testDecodeQsonValue("malformed object 1", "(a~b')", null, true);

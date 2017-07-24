@@ -23,11 +23,11 @@ var QSON = {};
 
     /*
     TODO:
-    - support NaN, Infinite? (JSON doesn't support these, but we could)
-      we should take care to guard against exploits (see SO post about why Nan/Infinite are not in JSON)
-    - support \t \n \r \f \b in key (use !t,!n,!r, etc.?)
-      support \uXXXX hex notation? (!uXXXX)
-      (lijkt niet nodig, wordt automatisch URI-encoded volgens encoding pagina)
+    - also support
+      !e as "end of value"
+      !t !n !r !f !b
+      !uXXXX hex notation
+      disallow all other escapes
     */
 
     // What name to use for the query parameter if we call toQueryString with
