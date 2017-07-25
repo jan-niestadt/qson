@@ -20,16 +20,6 @@ var QSON = {};
 
 (function () {
 
-
-    /*
-    TODO:
-    - also support
-      !e as "end of value"
-      !t !n !r !f !b
-      !uXXXX hex notation
-      disallow all other escapes
-    */
-
     // What name to use for the query parameter if we call toQueryString with
     // a non-object value and no other name was specified.
     var DEFAULT_PARAM_NAME = "_";
@@ -39,7 +29,7 @@ var QSON = {};
     var START_COMPOUND = "(";  // start a QSON compound value (object or array)
     var END_COMPOUND   = ")";  // end of QSON compound value (object or array)
     var KEY_VAL_SEP    = "~";  // QSON key/value separator
-    var ENTRY_SEP      = "'";  // QSON entry separator
+    var ENTRY_SEP      = "'";  // QSON entry separator / "end of value" signal
     var FORCE_STRING   = "_";  // force value to be parsed as a string
     var ESCAPE         = "!";  // escape character, similar to \ in many languages
 
@@ -52,6 +42,9 @@ var QSON = {};
     // (START_COMPOUND starts a list and FORCE_STRING indicates the value is explicitly a string)
     // KEY_VAL_ENDING_CHARS and ESCAPE must always be escaped in keys and values.
     var KEY_VAL_ESCAPE_REGEX = new RegExp("(^[" + START_COMPOUND + FORCE_STRING + "]|[" + KEY_VAL_ENDING_CHARS + ESCAPE + "])", "g");
+
+    // Recognize 4 hexadecimal digits for Unicode escape sequences like !u00E9
+    var UNICODE_HEX_REGEX = /^[0-9A-Fa-f]{4}$/;
 
     // What are safe names for regular query parameters?
     var QUERY_PARAMETER_NAME_REGEX = /^\w+$/;
@@ -143,28 +136,14 @@ var QSON = {};
             }
         }
 
-        // a string value to use as a key
-        function key() {
-            var str = [];
-            while (pos < input.length && KEY_VAL_ENDING_CHARS.indexOf(input[pos]) < 0) {
-                if (input[pos] === ESCAPE) {
-                    if (pos === input.length - 1)
-                        throw errorMsg("Input ends with escape character (" + ESCAPE + ")");
-                    // Escape char, copy next char verbatim
-                    pos++;
-                }
-                str.push(input[pos]);
-                pos++;
-            }
-            return str.join("");
-        }
-
         // string, number, boolean or null
-        function simpleValue() {
+        function simpleValue(isKey) {
             var str = [];
             var explicitString = false;
-            if (accept(FORCE_STRING)) {
-                explicitString = true;
+            if (!isKey) {
+                if (accept(FORCE_STRING)) {
+                    explicitString = true;
+                }
             }
             while (pos < input.length && KEY_VAL_ENDING_CHARS.indexOf(input[pos]) < 0) {
                 if (input[pos] === ESCAPE) {
@@ -172,24 +151,52 @@ var QSON = {};
                         throw errorMsg("Input ends with escape character (" + ESCAPE + ")");
                     // Escape char, copy next char verbatim
                     pos++;
+                    switch(input[pos]) {
+                    case START_COMPOUND:  case END_COMPOUND:  case KEY_VAL_SEP: 
+                    case ENTRY_SEP:       case FORCE_STRING:  case ESCAPE:
+                        str.push(input[pos]); break;
+                    case 't':  str.push('\t'); break;
+                    case 'n':  str.push('\n'); break;
+                    case 'r':  str.push('\r'); break;
+                    case 'f':  str.push('\f'); break;
+                    case 'b':  str.push('\b'); break;
+                    case 'u':
+                        // 4-digit hex Unicode codepoint follows
+                        if (pos + 4 >= input.length)
+                            throw errorMsg("Malformed unicode escape sequence: " + input);
+                        var hexStr = input.substr(pos + 1, 4);
+                        if (!hexStr.match(UNICODE_HEX_REGEX))
+                            throw errorMsg("Malformed unicode escape sequence: " + input);
+                        var codePoint = parseInt(hexStr, 16);
+                        str.push(String.fromCharCode(codePoint));
+                        pos += 4;
+                        break;
+                    default:
+                        throw errorMsg("Illegal escape sequence !" + input[pos]);
+                    }
+                } else {
+                    str.push(input[pos]);
                 }
-                str.push(input[pos]);
                 pos++;
             }
             var result = str.join("");
+            if (isKey)
+                return { "value": result };
             if (explicitString) {
                 // Either a key, which must always be a string, or a value starting with FORCE_STRING (_), meaning:
                 // "explicitly interpret this as a string, even though it might look like a number, boolean, or null"
                 return { "value": result, "from": FORCE_STRING + result };
             }
-            if (result === "null")
-                return { "value": null, "from": result };
-            if (result === "true")
-                return { "value": true, "from": result };
-            if (result === "false")
-                return { "value": false, "from": result };
-            if (isNumberString(result))
-                return { "value": Number(result), "from": result };
+            if (!isKey) {
+                if (result === "null")
+                    return { "value": null, "from": result };
+                if (result === "true")
+                    return { "value": true, "from": result };
+                if (result === "false")
+                    return { "value": false, "from": result };
+                if (isNumberString(result))
+                    return { "value": Number(result), "from": result };
+            }
             return { "value": result };
         }
 
@@ -201,7 +208,7 @@ var QSON = {};
             }
             obj[firstKey] = value();
             while (accept(ENTRY_SEP)) {
-                var k = key();
+                var k = simpleValue(true).value;
                 expect(KEY_VAL_SEP);
                 var v = value();
                 obj[k] = v;
@@ -257,8 +264,10 @@ var QSON = {};
             return result;
         }
 
-        return value();
-
+        var result = value();
+        if (pos < input.length && input[pos] !== ENTRY_SEP) // ENTRY_SEP doubles as "end of value"
+            throw errorMsg("Premature end of value found");
+        return result;
     }
 
     /** Convert the value to a query parameter object suitable for passing to e.g. jQuery.

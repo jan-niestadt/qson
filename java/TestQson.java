@@ -141,17 +141,33 @@ public class TestQson {
 		
 		testDecodeQueryString("special parameter name", "a=b&_=c", map("a", "b", "_", "c"), false);
 		testDecodeQueryString("query string ending in &", "a=b&", map("a", "b"), false);
+
+		// TODO: vraagteken in query string parameter name verbieden? (is toch al zo in GET URLs...?)
+		testDecodeQueryString("query string starting with ?", "?a=b", map("?a", "b"), false);
+
 		testDecodeQueryString("invalid query string starting with &", "&a=b", null, true);
 		testDecodeQueryString("invalid query string &&", "a=b&&c=d", null, true);
-		testDecodeQueryString("query string starting with ?", "?a=b", map("?a", "b"), false);
 		testDecodeQueryString("invalid query string no =", "a", null, true);
 		testDecodeQueryString("invalid query string empty key", "=1", null, true);
 
-		testDecodeQsonValue("illegal value", "Test!", null, true);
+		testDecodeQsonValue("key starting with underscore 1", "(_1~3)", map("_1", 3.0), false);
+		testDecodeQsonValue("key starting with underscore 2", "(a~b'_1~3)", map("a", "b", "_1", 3.0), false);
+		testDecodeQsonValue("end of value character", "1'2", 1.0, false);
+		testDecodeQsonValue("illegal string 2", "1~2", null, true);
+		testDecodeQsonValue("illegal string 3", "1)2", null, true);
+		testDecodeQsonValue("illegal string 4", "(1", null, true);
+		testDecodeQsonValue("forced empty string", "_", "", false);
 		testDecodeQsonValue("malformed object 1", "(a~b')", null, true);
 		testDecodeQsonValue("malformed object 2", "('a~b)", null, true);
 		testDecodeQsonValue("malformed object 3", "(a~b'c)", null, true);
-		testDecodeQsonValue("forced empty string", "_", "", false);
+
+		// Escapes
+		testDecodeQsonValue("character escapes", "!n!r!f!b", "\n\r\f\b", false);
+		testDecodeQsonValue("unicode escapes", "!u0041!u00e9!u03A3!u306C", "\u0041\u00e9\u03A3\u306C", false);
+		testDecodeQsonValue("illegal escape 1", "Test!", null, true);
+		testDecodeQsonValue("illegal escape 2", "!q", null, true);
+		testDecodeQsonValue("illegal unicode escape 1", "!u007", null, true);
+		testDecodeQsonValue("illegal unicode escape 2", "!uBABY", null, true);
 	}
 	
 	private void unitTests() {

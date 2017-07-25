@@ -64,6 +64,9 @@ public class Qson {
     // KEY_VAL_ENDING_CHARS and ESCAPE must always be escaped in keys and values.
     static final Pattern KEY_VAL_ESCAPE_REGEX = Pattern.compile("(^[" + START_COMPOUND + FORCE_STRING + "]|[" + KEY_VAL_ENDING_CHARS + ESCAPE + "])");
 
+    // Recognize 4 hexadecimal digits for Unicode escape sequences like !u00E9
+    static final Pattern UNICODE_HEX_REGEX = Pattern.compile("^[0-9A-Fa-f]{4}$");
+
     // What are safe names for regular query parameters?
     static final Pattern QUERY_PARAMETER_NAME_REGEX = Pattern.compile("^\\w+$");
     
@@ -78,7 +81,7 @@ public class Qson {
     	}
     	
         private RuntimeException errorMsg(String msg) {
-            return new RuntimeException(msg + " at " + pos);
+            return new IllegalArgumentException(msg + " at " + pos);
         }
 
         // Does the current character match this char?
@@ -93,8 +96,8 @@ public class Qson {
         private void expect(char c) {
             if (!accept(c)) {
             	if (pos >= input.length())
-            		throw new RuntimeException("Expected " + c + ", found end of input");
-				throw new RuntimeException("Expected " + c + ", found " + input.charAt(pos));
+            		throw errorMsg("Expected " + c + ", found end of input");
+				throw errorMsg("Expected " + c + ", found " + input.charAt(pos));
             }
         }
 
@@ -139,14 +142,47 @@ public class Qson {
             	explicitString = true;
             }
             while (pos < input.length() && Qson.KEY_VAL_ENDING_CHARS.indexOf(input.charAt(pos)) < 0) {
-                if (input.charAt(pos) == Qson.ESCAPE) {
+//                if (input.charAt(pos) == Qson.ESCAPE) {
+//                    if (pos == input.length() - 1)
+//                        throw errorMsg("Input ends with escape character (" + Qson.ESCAPE + ")");
+//                    // Escape char, copy next char verbatim
+//                    pos++;
+//                }
+//                str.append(input.charAt(pos));
+//                pos++;
+                if (input.charAt(pos) == ESCAPE) {
                     if (pos == input.length() - 1)
-                        throw errorMsg("Input ends with escape character (" + Qson.ESCAPE + ")");
+                        throw errorMsg("Input ends with escape character (" + ESCAPE + ")");
                     // Escape char, copy next char verbatim
                     pos++;
+                    switch(input.charAt(pos)) {
+                    case START_COMPOUND:  case END_COMPOUND:  case KEY_VAL_SEP: 
+                    case ENTRY_SEP:       case FORCE_STRING:  case ESCAPE:
+                        str.append(input.charAt(pos)); break;
+                    case 't':  str.append('\t'); break;
+                    case 'n':  str.append('\n'); break;
+                    case 'r':  str.append('\r'); break;
+                    case 'f':  str.append('\f'); break;
+                    case 'b':  str.append('\b'); break;
+                    case 'u':
+                        // 4-digit hex Unicode codepoint follows
+                        if (pos + 4 >= input.length())
+                            throw errorMsg("Malformed unicode escape sequence: " + input);
+                        String hexStr = input.substring(pos + 1, pos + 5);
+                        if (!UNICODE_HEX_REGEX.matcher(hexStr).matches())
+                            throw errorMsg("Malformed unicode escape sequence: " + input);
+                        int codePoint = Integer.valueOf(hexStr, 16);
+                        str.appendCodePoint(codePoint);
+                        pos += 4;
+                        break;
+                    default:
+                        throw errorMsg("Illegal escape sequence !" + input.charAt(pos));
+                    }
+                } else {
+                    str.append(input.charAt(pos));
                 }
-                str.append(input.charAt(pos));
                 pos++;
+            	
             }
             String result = str.toString();
             if (explicitString) {
@@ -228,7 +264,10 @@ public class Qson {
         }
 
         public Object parse() {
-        	return value();
+        	Object result = value();
+        	if (pos < input.length() && input.charAt(pos) != ENTRY_SEP) // ENTRY_SEP doubles as "end of value"
+        		throw errorMsg("Premature end of value found");
+        	return result;
         }
     	
     }
