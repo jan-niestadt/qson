@@ -95,6 +95,10 @@ public class TestQson {
 		return Arrays.asList(values);
 	}
 
+	private static void allowAnyName(boolean b) {
+		Qson.setAllowAnyQueryParameterName(b);
+	}
+
 	void performTests() {
 		// NOTE: this test code is directly portable between Java and JavaScript!
 
@@ -111,10 +115,12 @@ public class TestQson {
 		testEncode("null string", "null", "_null", "_=_null");
 		testEncode("1 string", "1", "_1", "_=_1");
 		testEncode("1.0 string", "1", "_1", "_=_1");
-		testEncode("newline", "a\nb", "a\nb", "_=a%0Ab");
-		testEncode("URL-encoding 1", "a & b", "a & b", "_=a%20%26%20b");
-		testEncode("URL-encoding 2", map("a&b", 3.0), "(a&b~3)", "_=(a%26b~3)");
-		testEncode("URL-encoding 3", "a + b", "a + b", "_=a%20%2B%20b");
+		
+		// URL encoding
+		testEncode("URL-encoding 1", "a\nb", "a\nb", "_=a%0Ab");
+		testEncode("URL-encoding 2", "a & b", "a & b", "_=a%20%26%20b");
+		testEncode("URL-encoding 3", map("a&b", 3.0), "(a&b~3)", "_=(a%26b~3)");
+		testEncode("URL-encoding 4", "a + b", "a + b", "_=a%20%2B%20b");
 
 		// Arrays
 		testEncode("simple array 1", list(1.0), "(1)", "_=(1)");
@@ -132,19 +138,24 @@ public class TestQson {
 		testEncode("special char keys", map("(", 1.0, "!", 2.0, "_", 3.0), "(!(~1'!!~2'!_~3)", "_=(!(~1'!!~2'!_~3)");
 		testEncode("key starts with _", map("_a", "b"), "(!_a~b)", "_a=b");
 		testEncode("key contains _", map("a_b", "c"), "(a_b~c)", "a_b=c");
+		testEncode("key containing number", map("a1", "b"), "(a1~b)", "a1=b");
+		testEncode("key starts with number", map("1a", "b"), "(1a~b)", "_=(1a~b)");
+		testEncode("key containing dash and dot", map("a.b", "c", "a-b", "d"), "(a.b~c'a-b~d)", "a.b=c&a-b=d");
+		testEncode("key starting with dot", map(".a", "b"), "(.a~b)", "_=(.a~b)");
 		testEncode("keys that look like values 1", map("null", 3.0), "(null~3)", "null=3");
 		testEncode("keys that look like values 2", map("1.2", 3.4), "(1.2~3.4)", "_=(1.2~3.4)");
 		testEncode("nested structures in object", map("a", list(1.0,2.0), "b", map("c", map("d", "e")), "f", list(list(list(3.0)))), "(a~(1'2)'b~(c~(d~e))'f~(((3))))", "a=(1'2)&b=(c~(d~e))&f=(((3)))");
+
+		allowAnyName(true);
+		testEncode("allow any query parameter name", map(" ", 1.0, "|", 2.0, "\u00e9", 3.0), "( ~1'|~2'\u00e9~3)", "%20=1&%7C=2&%C3%A9=3");
+		allowAnyName(false);
 		
 		// Below tests values that are never returned from stringify() or toQueryString();
 		// some are valid, some invalid Qson values.
 		
 		testDecodeQueryString("special parameter name", "a=b&_=c", map("a", "b", "_", "c"), false);
 		testDecodeQueryString("query string ending in &", "a=b&", map("a", "b"), false);
-
-		// TODO: vraagteken in query string parameter name verbieden? (is toch al zo in GET URLs...?)
-		testDecodeQueryString("query string starting with ?", "?a=b", map("?a", "b"), false);
-
+		testDecodeQueryString("query string starting with ?", "?a=b", map("a", "b"), false);
 		testDecodeQueryString("invalid query string starting with &", "&a=b", null, true);
 		testDecodeQueryString("invalid query string &&", "a=b&&c=d", null, true);
 		testDecodeQueryString("invalid query string no =", "a", null, true);

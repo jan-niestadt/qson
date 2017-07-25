@@ -39,7 +39,7 @@ public class Qson {
 	private static final String DEFAULT_ENCODING = StandardCharsets.UTF_8.name();
 	
 	private static String encoding = DEFAULT_ENCODING;
-	
+
 	// What name to use for the query parameter if we call toQueryString with
     // a non-object value and no other name was specified.
 	static final String DEFAULT_PARAM_NAME = "_";
@@ -68,8 +68,15 @@ public class Qson {
     static final Pattern UNICODE_HEX_REGEX = Pattern.compile("^[0-9A-Fa-f]{4}$");
 
     // What are safe names for regular query parameters?
-    static final Pattern QUERY_PARAMETER_NAME_REGEX = Pattern.compile("^\\w+$");
+    static final Pattern QUERY_PARAMETER_NAME_REGEX = Pattern.compile("^[a-zA-Z_][a-zA-Z0-9_\\-\\.]*$");
     
+    // Regex used to decide if a value should be parsed as a number
+    static final Pattern NUMBER_REGEX = Pattern.compile("[\\-]?(0|[1-9]\\d*)(\\.\\d+)?([eE][+-]?\\d+)?");
+    
+    // By default, we're conservative in the query parameter names we allow.
+    // Set this to true to allow any character in parameter names.
+	private static boolean allowAnyQueryParameterName = false;
+	
     private static class QsonParser {
     	
     	private int pos = 0;
@@ -332,7 +339,7 @@ public class Qson {
 
     // Check if the input appears to be a number.
     static boolean isNumberString(String input) {
-        return input != null && input.matches("[\\-]?(0|[1-9]\\d*)(\\.\\d+)?([eE][+-]?\\d+)?");
+        return input != null && NUMBER_REGEX.matcher(input).matches();
     }
 
     // Escape characters with special meaning in QSON with a !
@@ -443,7 +450,8 @@ public class Qson {
             	Object key = entry.getKey();
             	if (!(key instanceof String))
             		throw new UnsupportedOperationException("Only string keys are supported in maps");
-                if (key.equals(defaultParamName) || !QUERY_PARAMETER_NAME_REGEX.matcher((String)key).matches()) {
+                boolean disallowKey = !allowAnyQueryParameterName && !QUERY_PARAMETER_NAME_REGEX.matcher((String)key).matches();
+                if (key.equals(defaultParamName) || disallowKey) {
                     // We found a key we can't use as a regular query parameter name
                     // (either not a valid name, or equal to default param name)
                     // Just use the default param name and stringify the whole value.
@@ -531,6 +539,8 @@ public class Qson {
             // Empty object
             return new LinkedHashMap<>();
         }
+        if (input.charAt(0) == '?')
+        	input = input.substring(1);
         String[] entries = input.split("&");
         Map<String, String> paramObj = new LinkedHashMap<>();
         for (String entry: entries) {
@@ -545,5 +555,9 @@ public class Qson {
         }
         return fromParamObject(paramObj, defaultParamName);
     }
+
+	public static void setAllowAnyQueryParameterName(boolean b) {
+		Qson.allowAnyQueryParameterName = b;
+	}
 
 }

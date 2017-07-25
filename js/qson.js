@@ -20,6 +20,11 @@ var QSON = {};
 
 (function () {
 
+    /*
+    TODO:
+    - 
+    */
+
     // What name to use for the query parameter if we call toQueryString with
     // a non-object value and no other name was specified.
     var DEFAULT_PARAM_NAME = "_";
@@ -46,12 +51,24 @@ var QSON = {};
     // Recognize 4 hexadecimal digits for Unicode escape sequences like !u00E9
     var UNICODE_HEX_REGEX = /^[0-9A-Fa-f]{4}$/;
 
-    // What are safe names for regular query parameters?
-    var QUERY_PARAMETER_NAME_REGEX = /^\w+$/;
+    // What are definitely safe names for regular query parameters?
+    // (call setAllowAnyQueryParameterName to allow any name)
+    var QUERY_PARAMETER_NAME_REGEX = /^[a-zA-Z_][a-zA-Z_0-9\-\.]*$/;
+
+    // Regex used to decide if a value should be parsed as a number
+    var NUMBER_REGEX = /^[\-]?(0|[1-9]\d*)(\.\d+)?([eE][+-]?\d+)?$/;
 
     // Check if the input appears to be a number.
     function isNumberString(input) {
-        return input && input.match(/^[\-]?(0|[1-9]\d*)(\.\d+)?([eE][+-]?\d+)?$/);
+        return input && input.match(NUMBER_REGEX);
+    }
+
+    // By default, we're conservative in the query parameter names we allow.
+    // Set this to true to allow any character in parameter names.
+    var allowAnyQueryParameterName = false;
+
+    QSON.setAllowAnyQueryParameterName = function setAllowAnyQueryParameterName(b) {
+        allowAnyQueryParameterName = !!b;
     }
 
     /**
@@ -284,7 +301,8 @@ var QSON = {};
             // Top-level object. Encode as regular query string.
             for (var key in value) {
                 if (value.hasOwnProperty(key)) {
-                    if (key === defaultParamName || !key.match(QUERY_PARAMETER_NAME_REGEX)) {
+                    var disallowKey = !allowAnyQueryParameterName && !key.match(QUERY_PARAMETER_NAME_REGEX);
+                    if (key === defaultParamName || disallowKey)  {
                         // We found a key we can't use as a regular query parameter name
                         // (either not a valid name, or equal to default param name)
                         // Just use the default param name and stringify the whole value.
@@ -352,6 +370,8 @@ var QSON = {};
             // Empty object
             return {};
         }
+        if (input[0] === '?')
+            input = input.substr(1);
         var entries = input.split(/&/);
         var paramObj = {};
         for (var i = 0; i < entries.length; i++) {
