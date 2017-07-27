@@ -22,7 +22,7 @@ var QSON = {};
 
     /*
     TODO:
-    - 
+    - add option to ignore certain parameter names in query string
     */
 
     // What name to use for the query parameter if we call toQueryString with
@@ -48,6 +48,9 @@ var QSON = {};
     // KEY_VAL_ENDING_CHARS and ESCAPE must always be escaped in keys and values.
     var KEY_VAL_ESCAPE_REGEX = new RegExp("(^[" + START_COMPOUND + FORCE_STRING + "]|[" + KEY_VAL_ENDING_CHARS + ESCAPE + "])", "g");
 
+    // Regex for also escaping newlines, tabs, etc. and any character above 127.
+    var ESCAPE_LOW_ASCII_UNICODE_REGEX = /[\n\r\f\b\t\u0080-\uFFFF]/g;
+
     // Recognize 4 hexadecimal digits for Unicode escape sequences like !u00E9
     var UNICODE_HEX_REGEX = /^[0-9A-Fa-f]{4}$/;
 
@@ -67,9 +70,11 @@ var QSON = {};
     // Set this to true to allow any character in parameter names.
     var allowAnyQueryParameterName = false;
 
-    QSON.setAllowAnyQueryParameterName = function setAllowAnyQueryParameterName(b) {
-        allowAnyQueryParameterName = !!b;
-    }
+    // By default, we only escape characters that have special meaning in QSON.
+    // Set this to true to also escape low ASCII chars (newline, tab, etc.)
+    // and characters above 127 when creating QSON. This is useful if you want
+    // to e.g. write a QSON value to a TSV file.
+    var escapeLowAsciiAndUnicode = false;
 
     /**
      * Serialize the value to a QSON string. 
@@ -78,9 +83,25 @@ var QSON = {};
      */
     QSON.stringify = function stringify(value) {
 
+        function replaceLowAsciiAndUnicode(match) {
+            switch (match) {
+            case '\n': return "!n";
+            case '\r': return "!r";
+            case '\f': return "!f";
+            case '\b': return "!b";
+            case '\t': return "!t";
+            default:   return "!u" + ("000" + match.charCodeAt(0).toString(16)).slice(-4);
+            }
+        }
+
         // Escape characters with special meaning in QSON with a !
+        // (optionally also escapes low ascii and unicode chars)
         function escapeSpecialChars(str) {
-            return str.replace(KEY_VAL_ESCAPE_REGEX, ESCAPE + "$1");
+            str = str.replace(KEY_VAL_ESCAPE_REGEX, ESCAPE + "$1");
+            if (escapeLowAsciiAndUnicode) {
+                str = str.replace(ESCAPE_LOW_ASCII_UNICODE_REGEX, replaceLowAsciiAndUnicode);
+            }
+            return str;
         }
 
         var output = [];
@@ -92,7 +113,7 @@ var QSON = {};
             }
             output.push(START_COMPOUND, parts.join(ENTRY_SEP), END_COMPOUND);
         } else if ((typeof value === "object") && (value !== null)) {
-            // Object. Join key/value with ~ and entries with ENTRY_SEP.
+            // Object. Join key/value with KEY_VAL_SEP and entries with ENTRY_SEP.
             var parts = [];
             for (var key in value) {
                 if (value.hasOwnProperty(key)) {
@@ -366,7 +387,7 @@ var QSON = {};
      * @return decoded original value
      */
     QSON.fromQueryString = function fromQueryString(input, defaultParamName) {
-        if (input.length == 0) {
+        if (input.length === 0) {
             // Empty object
             return {};
         }
@@ -375,7 +396,7 @@ var QSON = {};
         var entries = input.split(/&/);
         var paramObj = {};
         for (var i = 0; i < entries.length; i++) {
-            if (i == entries.length - 1 && entries[i].length == 0)
+            if (i === entries.length - 1 && entries[i].length === 0)
                 break; // query string ended with &; this is okay
             var keyValue = entries[i].split(/=/);
             if (keyValue.length !== 2)
@@ -387,6 +408,28 @@ var QSON = {};
             paramObj[key] = value;
         }
         return QSON.fromParamObject(paramObj, defaultParamName);
+    }
+
+    /** Should any query parameter name be allowed?
+     * 
+     * By default, we're conservative in the query parameter names we allow.
+     * Set this to true to allow any character in parameter names.
+     * @param b whether or not to allow all query parameter names
+     */
+    QSON.setAllowAnyQueryParameterName = function setAllowAnyQueryParameterName(b) {
+        allowAnyQueryParameterName = !!b;
+    }
+
+    /** Should we escape characters that don't have special meaning in QSON?
+     *  
+     * By default, we only escape characters that have special meaning in QSON.
+     * Set this to true to also escape low ASCII chars (newline, tab, etc.)
+     * and characters above 127 when creating QSON. This is useful if you want
+     * to e.g. write a QSON value to a TSV file.
+     * @param b whether or not to allow all query parameter names
+     */
+    QSON.setEscapeLowAsciiAndUnicode = function setEscapeLowAsciiAndUnicode(b) {
+        escapeLowAsciiAndUnicode = !!b;
     }
 
 })();

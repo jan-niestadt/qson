@@ -183,6 +183,10 @@ function unitTests() {
 		QSON.setAllowAnyQueryParameterName(b);
 	}
 
+	function introduceEscapes(b) {
+		QSON.setEscapeLowAsciiAndUnicode(b);
+	}
+
 	function performTests() {
 		// NOTE: this test code is directly portable between Java and JavaScript!
 
@@ -233,6 +237,11 @@ function unitTests() {
 		allowAnyName(true);
 		testEncode("allow any query parameter name", map(" ", 1.0, "|", 2.0, "\u00e9", 3.0), "( ~1'|~2'\u00e9~3)", "%20=1&%7C=2&%C3%A9=3");
 		allowAnyName(false);
+
+		introduceEscapes(true);
+		testEncode("introduce escapes low ascii", "\n\r\f\b\t", "!n!r!f!b!t", "_=!n!r!f!b!t");
+		testEncode("introduce escapes unicode", "\u00e9", "!u00e9", "_=!u00e9");
+		introduceEscapes(false);
 		
 		// Below tests values that are never returned from stringify() or toQueryString();
 		// some are valid, some invalid Qson values.

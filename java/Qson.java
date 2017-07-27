@@ -25,6 +25,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
@@ -64,6 +65,9 @@ public class Qson {
     // KEY_VAL_ENDING_CHARS and ESCAPE must always be escaped in keys and values.
     static final Pattern KEY_VAL_ESCAPE_REGEX = Pattern.compile("(^[" + START_COMPOUND + FORCE_STRING + "]|[" + KEY_VAL_ENDING_CHARS + ESCAPE + "])");
 
+    // Regex for also escaping newlines, tabs, etc. and any character above 127.
+    static final Pattern ESCAPE_LOW_ASCII_UNICODE_REGEX = Pattern.compile("[\n\r\f\b\t\u0080-\uFFFF]");
+
     // Recognize 4 hexadecimal digits for Unicode escape sequences like !u00E9
     static final Pattern UNICODE_HEX_REGEX = Pattern.compile("^[0-9A-Fa-f]{4}$");
 
@@ -77,6 +81,12 @@ public class Qson {
     // Set this to true to allow any character in parameter names.
 	private static boolean allowAnyQueryParameterName = false;
 	
+    // By default, we only escape characters that have special meaning in QSON.
+    // Set this to true to also escape low ASCII chars (newline, tab, etc.)
+    // and characters above 127 when creating QSON. This is useful if you want
+    // to e.g. write a QSON value to a TSV file.
+    private static boolean escapeLowAsciiAndUnicode = false;
+
     private static class QsonParser {
     	
     	private int pos = 0;
@@ -344,7 +354,27 @@ public class Qson {
 
     // Escape characters with special meaning in QSON with a !
     private static String escapeSpecialChars(String str) {
-    	return KEY_VAL_ESCAPE_REGEX.matcher(str).replaceAll(Character.toString(ESCAPE) + "$1");
+    	str = KEY_VAL_ESCAPE_REGEX.matcher(str).replaceAll(Character.toString(ESCAPE) + "$1");
+        if (escapeLowAsciiAndUnicode) {
+            Matcher m = ESCAPE_LOW_ASCII_UNICODE_REGEX.matcher(str);
+            StringBuffer b = new StringBuffer();
+            while (m.find()) {
+            	String replacement;
+            	char c = m.group().charAt(0);
+				switch(c) {
+                case '\n': replacement = "!n"; break;
+                case '\r': replacement = "!r"; break;
+                case '\f': replacement = "!f"; break;
+                case '\b': replacement = "!b"; break;
+                case '\t': replacement = "!t"; break;
+                default:   replacement = "!u" + String.format("%04x", c & 0xFFFF);
+            	}
+            	m.appendReplacement(b, replacement);
+            }
+            m.appendTail(b);
+            return b.toString();
+        }
+        return str;
     }
     
     private static String join(List<String> parts, char sep) {
@@ -556,8 +586,26 @@ public class Qson {
         return fromParamObject(paramObj, defaultParamName);
     }
 
+    /** Should any query parameter name be allowed?
+     * 
+     * By default, we're conservative in the query parameter names we allow.
+     * Set this to true to allow any character in parameter names.
+     * @param b whether or not to allow all query parameter names
+     */
 	public static void setAllowAnyQueryParameterName(boolean b) {
 		Qson.allowAnyQueryParameterName = b;
 	}
+
+    /** Should we escape characters that don't have special meaning in QSON?
+     *  
+     * By default, we only escape characters that have special meaning in QSON.
+     * Set this to true to also escape low ASCII chars (newline, tab, etc.)
+     * and characters above 127 when creating QSON. This is useful if you want
+     * to e.g. write a QSON value to a TSV file.
+     * @param b whether or not to allow all query parameter names
+     */
+	public static void setEscapeLowAsciiAndUnicode(boolean b) {
+        Qson.escapeLowAsciiAndUnicode = b;
+    }
 
 }
