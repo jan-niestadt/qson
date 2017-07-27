@@ -316,7 +316,7 @@ var QSON = {};
      */
     QSON.toParamObject = function toParamObject(value, defaultParamName) {
         var obj = {};
-        if (defaultParamName === undefined)
+        if (defaultParamName === undefined || defaultParamName === null)
             defaultParamName = DEFAULT_PARAM_NAME;
         if (!Array.isArray(value) && (typeof value === "object") && (value !== null)) {
             // Top-level object. Encode as regular query string.
@@ -348,7 +348,7 @@ var QSON = {};
      */
     QSON.fromParamObject = function fromParamObject(obj, defaultParamName) {
         var result = {};
-        if (defaultParamName === undefined)
+        if (defaultParamName === undefined || defaultParamName === null)
             defaultParamName = DEFAULT_PARAM_NAME;
         var n = 0;
         for (var key in obj) {
@@ -381,12 +381,12 @@ var QSON = {};
     }
 
     /** Convert a query string back to the original value.
-     * NOTE: the query string should not start with a "?".
      * @param input query string to decode
      * @param defaultParamName parameter name used if the value is not an object
+     * @param ignoreParams if specified, these parameter names will be ignored
      * @return decoded original value
      */
-    QSON.fromQueryString = function fromQueryString(input, defaultParamName) {
+    QSON.fromQueryString = function fromQueryString(input, defaultParamName, ignoreParams) {
         if (input.length === 0) {
             // Empty object
             return {};
@@ -404,6 +404,8 @@ var QSON = {};
             var key = decodeURIComponent(keyValue[0]);
             if (key.length === 0)
                 throw "Malformed parameter in query string: " + input;
+            if (Array.isArray(ignoreParams) && ignoreParams.indexOf(key) >= 0)
+                continue;
             var value = decodeURIComponent(keyValue[1]);
             paramObj[key] = value;
         }

@@ -69,7 +69,7 @@ public class TestQson {
 	
 	void testDecodeQueryString(String name, String queryString, Object expected, boolean expectError) {
 		try {
-			test(name, Qson.fromQueryString(queryString), expected);
+			test(name, Qson.fromQueryString(queryString, null, Arrays.asList("ignoreThis")), expected);
 		} catch (Exception e) {
 			onError(name, expected, expectError, e);
 		}
@@ -169,6 +169,7 @@ public class TestQson {
 		testDecodeQueryString("invalid query string &&", "a=b&&c=d", null, true);
 		testDecodeQueryString("invalid query string no =", "a", null, true);
 		testDecodeQueryString("invalid query string empty key", "=1", null, true);
+		testDecodeQueryString("ignore parameter", "a=b&ignoreThis=2", map("a", "b"), false);
 
 		testDecodeQsonValue("key starting with underscore 1", "(_1~3)", map("_1", 3.0), false);
 		testDecodeQsonValue("key starting with underscore 2", "(a~b'_1~3)", map("a", "b", "_1", 3.0), false);

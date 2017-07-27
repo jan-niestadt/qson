@@ -555,16 +555,25 @@ public class Qson {
      * @return decoded original value
      */
     public static Object fromQueryString(String input) {
-    	return fromQueryString(input, null);
+    	return fromQueryString(input, null, null);
     }
     
     /** Convert a query string back to the original value.
-     * NOTE: the query string should not start with a "?".
      * @param input query string to decode
      * @param defaultParamName parameter name used if the value is not an object
      * @return decoded original value
      */
     public static Object fromQueryString(String input, String defaultParamName) {
+    	return fromQueryString(input, defaultParamName, null);    	
+    }
+    
+    /** Convert a query string back to the original value.
+     * @param input query string to decode
+     * @param defaultParamName parameter name used if the value is not an object
+     * @param ignoreParams if specified, these parameter names will be ignored
+     * @return decoded original value
+     */
+    public static Object fromQueryString(String input, String defaultParamName, List<String> ignoreParams) {
         if (input.isEmpty()) {
             // Empty object
             return new LinkedHashMap<>();
@@ -580,6 +589,8 @@ public class Qson {
             String key = EncodingUtil.decodeURIComponent(keyValue[0]);
             if (key.length() == 0)
             	throw new UnsupportedOperationException("Malformed parameter in query string: " + input);
+            if (ignoreParams != null && ignoreParams.contains(key))
+            	continue;
             String value = EncodingUtil.decodeURIComponent(keyValue[1]);
             paramObj.put(key, value);
         }

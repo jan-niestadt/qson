@@ -165,7 +165,7 @@ function unitTests() {
 
 	function testDecodeQueryString(name, queryString, expected, expectError) {
 		try {
-			test(name, QSON.fromQueryString(queryString), expected, expectError);
+			test(name, QSON.fromQueryString(queryString, null, ["ignoreThis"]), expected, expectError);
 		} catch(e) {
 			onError(name, expected, expectError, e);
 		}
@@ -253,6 +253,7 @@ function unitTests() {
 		testDecodeQueryString("invalid query string &&", "a=b&&c=d", null, true);
 		testDecodeQueryString("invalid query string no =", "a", null, true);
 		testDecodeQueryString("invalid query string empty key", "=1", null, true);
+		testDecodeQueryString("ignore parameter", "a=b&ignoreThis=2", map("a", "b"), false);
 
 		testDecodeQsonValue("key starting with underscore 1", "(_1~3)", map("_1", 3.0), false);
 		testDecodeQsonValue("key starting with underscore 2", "(a~b'_1~3)", map("a", "b", "_1", 3.0), false);
